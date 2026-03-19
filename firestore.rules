@@ -1,94 +1,89 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: users
-    // Document ID: userId (Auth UID)
-    // Fields:
-    //   - uid: string (required)
-    //   - sdt: string (required)
-    //   - displayName: string
-    //   - role: string (required, enum: admin, user)
-    //   - status: string (enum: active, inactive)
-    //   - createdAt: timestamp
-    //
-    // Collection: refundRequests
-    // Document ID: requestId (Auto-generated)
-    // Fields:
-    //   - userId: string (required)
-    //   - userSdt: string
-    //   - bankName: string (required)
-    //   - accountNumber: string (required)
-    //   - accountHolder: string (required)
-    //   - amount: number (required, positive)
-    //   - orderCode: string (required)
-    //   - status: string (required, enum: pending, approved, rejected)
-    //   - createdAt: timestamp
-    //   - updatedAt: timestamp
-    //   - adminNote: string
-    //
-    // ===============================================================
 
-    // Helper Functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
-    function isAdmin() {
-      return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-         (request.auth.token.email == "jacksaybin@gmail.com" && request.auth.token.email_verified == true));
-    }
-
-    function isValidUser(data) {
-      return data.keys().hasAll(['uid', 'sdt', 'role']) &&
-             data.uid is string &&
-             data.sdt is string &&
-             data.role in ['admin', 'user'];
-    }
-
-    function isValidRefundRequest(data) {
-      return data.keys().hasAll(['userId', 'bankName', 'accountNumber', 'accountHolder', 'amount', 'orderCode', 'status']) &&
-             data.userId is string &&
-             data.bankName is string && data.bankName.size() > 0 && data.bankName.size() < 100 &&
-             data.accountNumber is string && data.accountNumber.size() > 0 && data.accountNumber.size() < 50 &&
-             data.accountHolder is string && data.accountHolder.size() > 0 && data.accountHolder.size() < 100 &&
-             data.amount is number && data.amount > 0 &&
-             data.orderCode is string && data.orderCode.size() > 0 && data.orderCode.size() < 50 &&
-             data.status in ['pending', 'approved', 'rejected'] &&
-             (!('adminNote' in data) || (data.adminNote is string && data.adminNote.size() < 500));
-    }
-
-    // Rules for users collection
+    // ============================================================
+    // COLLECTION: users
+    // ============================================================
     match /users/{userId} {
-      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
-      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin());
-      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (
-        (isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin()
-      );
+      // Ai cũng có thể đọc danh sách users (cần cho Admin)
+      allow read: if true;
+
+      // User chỉ được tạo/sửa profile của chính mình
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasAll(['uid', 'displayName', 'email', 'role', 'status', 'createdAt']);
+
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        // Không cho user tự thay đổi role
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])
+            || request.auth.token.email == 'jacksaybin@gmail.com');
+
+      // Xóa: chỉ chính user hoặc admin mới được vô hiệu hóa (soft delete)
+      // Hard delete chỉ qua Firebase Admin SDK hoặc Cloud Functions
+      allow delete: if false;
     }
 
-    // Rules for refundRequests collection
+    // ============================================================
+    // COLLECTION: refundRequests
+    // ============================================================
     match /refundRequests/{requestId} {
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAuthenticated() && isValidRefundRequest(request.resource.data) && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && (
-        (isAdmin() && isValidRefundRequest(request.resource.data)) ||
-        (resource.data.userId == request.auth.uid && resource.data.status == 'pending' && request.resource.data.status == 'pending' && isValidRefundRequest(request.resource.data))
-      );
-      allow delete: if isAdmin();
+      // User chỉ đọc yêu cầu của chính mình
+      allow read: if request.auth != null
+        && (resource.data.userId == request.auth.uid
+            || isAdmin());
+
+      // User tạo yêu cầu mới (chỉ status = pending)
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.keys().hasAll([
+          'userId', 'userEmail', 'bankName', 'accountNumber',
+          'accountHolder', 'amount', 'orderCode', 'status',
+          'createdAt', 'updatedAt'
+        ]);
+
+      // User có thể cập nhật yêu cầu của mình khi đang ở trạng thái pending
+      // (để có thể chỉnh sửa hoặc hủy)
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid
+        && resource.data.status == 'pending';
+
+      // Admin có thể cập nhật mọi trạng thái
+      allow update: if isAdmin();
+
+      // Không ai được xóa yêu cầu
+      allow delete: if false;
     }
-    // Rules for basedata collection
+
+    // ============================================================
+    // COLLECTION: basedata
+    // Chứa dữ liệu vé máy bay mẫu - chỉ admin tạo/sửa
+    // ============================================================
     match /basedata/{orderId} {
-      allow read: if isAuthenticated();
+      allow read: if request.auth != null;
       allow write: if isAdmin();
+    }
+
+    // ============================================================
+    // COLLECTION: adminAuditLog
+    // Nhật ký hành động admin - chỉ admin đọc, hệ thống ghi
+    // ============================================================
+    match /adminAuditLog/{logId} {
+      allow read: if isAdmin();
+      // Tạo log: cho phép nếu là admin
+      // (thực tế nên ghi qua Cloud Function để tránh client giả mạo)
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // ============================================================
+    // HELPER FUNCTIONS
+    // ============================================================
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == 'jacksaybin@gmail.com';
     }
   }
 }
