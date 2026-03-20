@@ -76,17 +76,17 @@ export const RefundRequestForm: React.FC<RefundRequestFormProps> = ({ onClose, p
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         className="relative w-[calc(100%-2rem)] sm:w-full max-w-lg sm:max-w-xl lg:max-w-2xl glass-card shadow-2xl overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[92vh]"
       >
-        <div className="p-4 sm:p-5 border-b border-border-subtle flex items-center justify-between bg-page/80 backdrop-blur-sm sticky top-0 z-10">
-          <div className="flex items-center gap-3 w-full">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-primary-100 text-primary-600 rounded-xl flex items-center justify-center shrink-0">
-              <RotateCcw size={18} className="sm:w-5 sm:h-5" />
+        <div className="p-3 sm:p-5 border-b border-border-subtle flex items-start sm:items-center justify-between bg-page/80 backdrop-blur-sm sticky top-0 z-10">
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary-100 text-primary-600 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0">
+              <RotateCcw size={16} className="sm:w-5 sm:h-5" />
             </div>
-            <div className="flex-1 text-center pr-8 sm:pr-10">
-              <h3 className="text-xl sm:text-2xl font-black bg-gradient-to-r from-primary-600 to-indigo-600 bg-clip-text text-transparent drop-shadow-sm">Yêu cầu hoàn vé máy bay</h3>
-              <p className="text-xs sm:text-sm text-muted mt-1 font-medium">Điền thông tin bên dưới để gửi yêu cầu hoàn vé</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base sm:text-2xl font-black bg-gradient-to-r from-primary-600 to-indigo-600 bg-clip-text text-transparent truncate">Hoàn vé máy bay</h3>
+              <p className="text-[10px] sm:text-sm text-muted font-medium truncate">Điền thông tin yêu cầu hoàn vé</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl text-muted hover:text-main hover:bg-primary/5 transition-all active:scale-95"><X size={20} className="sm:w-6 sm:h-6" /></button>
+          <button onClick={onClose} className="p-2 -mr-2 rounded-lg text-muted hover:text-main hover:bg-primary/5 transition-all"><X size={20} /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
           {error && (

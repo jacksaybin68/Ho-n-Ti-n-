@@ -10,6 +10,7 @@ import {
   Clock,
   Info,
   Search,
+  ChevronRight,
 } from "lucide-react";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
@@ -177,7 +178,7 @@ export function RefundRequestManagement({
           targetId: isEditingRequest.id,
           targetType: "refundRequest",
           changes,
-          timestamp: serverTimestamp(),
+          createdAt: serverTimestamp(),
         });
       }
 
@@ -220,7 +221,7 @@ export function RefundRequestManagement({
       status,
       affectedIds: selectedRequests,
       changes,
-      timestamp: serverTimestamp(),
+      createdAt: serverTimestamp(),
     });
     setSelectedRequests([]);
     setNotes({});
@@ -283,7 +284,7 @@ export function RefundRequestManagement({
           targetId: id,
           targetType: "refundRequest",
           changes,
-          timestamp: serverTimestamp(),
+          createdAt: serverTimestamp(),
         });
       }
 
@@ -341,7 +342,7 @@ export function RefundRequestManagement({
         changes: {
           isVisible: { old: req.isVisible !== false, new: newVisibility },
         },
-        timestamp: serverTimestamp(),
+        createdAt: serverTimestamp(),
       });
     } catch (error) {
       console.error("Error toggling visibility:", error);
@@ -1015,20 +1016,23 @@ export function RefundRequestManagement({
 
       <div className="p-4">
         <div className="flex flex-col lg:flex-row justify-between items-center gap-3 bg-gray-50 p-2.5 border border-gray-200 rounded mb-3">
-          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-            <input
-              type="text"
-              placeholder="Tìm theo mã PNR..."
-              value={pnrSearch}
-              onChange={(e) => setPnrSearch(e.target.value)}
-              className="px-3 py-1.5 text-[13px] border border-gray-300 rounded outline-none focus:border-blue-500 w-44"
-            />
+          <div className="flex flex-col sm:flex-row items-center gap-2 w-full lg:w-auto">
+            <div className="relative w-full sm:w-44">
+              <input
+                type="text"
+                placeholder="Mã PNR..."
+                value={pnrSearch}
+                onChange={(e) => setPnrSearch(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-gray-300 rounded outline-none focus:border-blue-500"
+              />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+            </div>
             <select
               value={bankFilter}
               onChange={(e) => setBankFilter(e.target.value)}
-              className="px-3 py-1.5 text-[13px] border border-gray-300 rounded outline-none focus:border-blue-500 font-bold"
+              className="w-full sm:w-auto px-3 py-1.5 text-[13px] border border-gray-300 rounded outline-none focus:border-blue-500 font-bold bg-white"
             >
-              <option value="all">TẤT CẢ NGÂN HÀNG</option>
+              <option value="all">NGÂN HÀNG: TẤT CẢ</option>
               {uniqueBanks.map((bank) => (
                 <option key={bank} value={bank}>
                   {bank}
@@ -1038,15 +1042,15 @@ export function RefundRequestManagement({
             <select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as typeof sortOrder)}
-              className="px-3 py-1.5 text-[13px] border border-gray-300 rounded outline-none focus:border-blue-500 font-bold"
+              className="w-full sm:w-auto px-3 py-1.5 text-[13px] border border-gray-300 rounded outline-none focus:border-blue-500 font-bold bg-white"
             >
-              <option value="none">SẮP XẾP MẶC ĐỊNH</option>
+              <option value="none">SẮP XẾP: MẶC ĐỊNH</option>
               <option value="newest">MỚI NHẤT TRƯỚC</option>
               <option value="oldest">CŨ NHẤT TRƯỚC</option>
             </select>
           </div>
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full lg:w-auto pb-1 lg:pb-0">
-            <span className="text-[12px] font-bold text-gray-700 uppercase mr-1 whitespace-nowrap hidden lg:block">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full lg:w-auto pb-1 lg:pb-0">
+            <span className="text-[11px] font-bold text-gray-700 uppercase mr-1 whitespace-nowrap hidden xl:block">
               Trạng thái:
             </span>
             {(
@@ -1063,7 +1067,7 @@ export function RefundRequestManagement({
                 key={f}
                 onClick={() => setFilter(f)}
                 className={cn(
-                  "whitespace-nowrap px-3 py-1 text-[12px] font-bold rounded transition-colors",
+                  "whitespace-nowrap px-2.5 py-1 text-[11px] md:text-[12px] font-bold rounded transition-colors",
                   filter === f
                     ? "bg-blue-600 text-white shadow-sm"
                     : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-100",
@@ -1072,57 +1076,59 @@ export function RefundRequestManagement({
                 {f === "all"
                   ? "Tất cả"
                   : f === "pending"
-                    ? "Chờ duyệt"
+                    ? "Chờ"
                     : f === "approved"
-                      ? "Đã duyệt"
+                      ? "Duyệt"
                       : f === "processing"
-                        ? "Đang chuyển"
+                        ? "Chuyển"
                         : f === "completed"
-                          ? "Hoàn tất"
+                          ? "H.tất"
                           : "Từ chối"}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="overflow-x-auto border border-gray-200">
+        <div className="border border-gray-200 rounded overflow-hidden">
           {selectedRequests.length > 0 && (
-            <div className="mb-3 bg-blue-50 text-blue-900 p-2.5 flex items-center justify-between rounded border border-blue-200">
-              <div className="flex items-center gap-2 font-bold text-[13px]">
+            <div className="bg-blue-50 text-blue-900 p-2.5 flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-blue-200">
+              <div className="flex items-center gap-2 font-bold text-[12px] md:text-[13px]">
                 <TicketCheck size={16} className="text-blue-600" />
-                <span className="uppercase">
-                  Đã chọn {selectedRequests.length} yêu cầu
+                <span className="uppercase whitespace-nowrap">
+                  Chọn {selectedRequests.length} mục
                 </span>
               </div>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
                 <button
                   onClick={() => handleBulkAction("approved")}
-                  className="px-3 py-1.5 text-[11px] bg-blue-600 text-white rounded shadow-sm hover:bg-blue-700 font-bold transition-colors uppercase"
+                  className="px-2 py-1.5 text-[10px] md:text-[11px] bg-blue-600 text-white rounded shadow-sm hover:bg-blue-700 font-bold transition-colors uppercase"
                 >
                   Duyệt
                 </button>
                 <button
                   onClick={() => handleBulkAction("processing")}
-                  className="px-3 py-1.5 text-[11px] bg-violet-600 text-white rounded shadow-sm hover:bg-violet-700 font-bold transition-colors uppercase"
+                  className="px-2 py-1.5 text-[10px] md:text-[11px] bg-violet-600 text-white rounded shadow-sm hover:bg-violet-700 font-bold transition-colors uppercase"
                 >
-                  Đang chuyển
+                  Chuyển
                 </button>
                 <button
                   onClick={() => handleBulkAction("completed")}
-                  className="px-3 py-1.5 text-[11px] bg-emerald-600 text-white rounded shadow-sm hover:bg-emerald-700 font-bold transition-colors uppercase"
+                  className="px-2 py-1.5 text-[10px] md:text-[11px] bg-emerald-600 text-white rounded shadow-sm hover:bg-emerald-700 font-bold transition-colors uppercase"
                 >
-                  Hoàn tất
+                  H.tất
                 </button>
                 <button
                   onClick={() => handleBulkAction("rejected")}
-                  className="px-3 py-1.5 text-[11px] bg-red-600 text-white rounded shadow-sm hover:bg-red-700 font-bold transition-colors uppercase"
+                  className="px-2 py-1.5 text-[10px] md:text-[11px] bg-red-600 text-white rounded shadow-sm hover:bg-red-700 font-bold transition-colors uppercase"
                 >
                   Từ chối
                 </button>
               </div>
             </div>
           )}
-          <div className="overflow-x-auto w-full">
+
+          {/* Table View (Desktop) */}
+          <div className="hidden md:block overflow-x-auto w-full">
             <table className="w-full text-left text-[13px] text-gray-700 min-w-[1000px]">
               <thead>
                 <tr className="bg-[#f5f5f5] text-[#0A58A3] border-b border-gray-300">
@@ -1182,7 +1188,7 @@ export function RefundRequestManagement({
                           }}
                         />
                       </td>
-                      <td className="px-3 py-2.5 border-r border-gray-100">
+                      <td className="px-3 py-2.5 border-r border-gray-100 italic">
                         <div className="flex flex-col">
                           <p
                             className="text-[13px] font-black tracking-widest text-[#0A58A3] cursor-pointer hover:underline uppercase"
@@ -1197,20 +1203,20 @@ export function RefundRequestManagement({
                       </td>
                       <td className="px-3 py-2.5 border-r border-gray-100">
                         <div className="flex flex-col">
-                          <span className="text-[12px] font-bold text-black uppercase truncate">
+                          <span className="text-[12px] font-bold text-black uppercase truncate whitespace-nowrap overflow-hidden">
                             {req.displayName || "Khách hàng"}
                           </span>
-                          <span className="text-[11px] text-gray-500 truncate">
+                          <span className="text-[11px] text-gray-500 truncate whitespace-nowrap overflow-hidden">
                             {req.userEmail}
                           </span>
                         </div>
                       </td>
                       <td className="px-3 py-2.5 border-r border-gray-100">
                         <div className="flex flex-col">
-                          <span className="text-[12px] font-bold text-black uppercase">
+                          <span className="text-[12px] font-bold text-black uppercase whitespace-nowrap overflow-hidden">
                             {req.bankName}
                           </span>
-                          <span className="text-[11px] font-bold text-gray-600 truncate">
+                          <span className="text-[11px] font-bold text-gray-600 truncate whitespace-nowrap overflow-hidden">
                             {req.accountNumber}
                           </span>
                         </div>
@@ -1238,7 +1244,7 @@ export function RefundRequestManagement({
                         />
                       </td>
                       <td className="px-3 py-2.5 border-r border-gray-100 text-center">
-                        <Badge status={req.status} />
+                        <Badge status={req.status} className="!text-[10px]" />
                       </td>
                       <td className="px-3 py-2.5 text-center">
                         <div className="flex items-center justify-center gap-1.5">
@@ -1292,14 +1298,105 @@ export function RefundRequestManagement({
                   <tr>
                     <td
                       colSpan={8}
-                      className="px-3 py-6 text-center text-red-500 font-bold italic border-t border-gray-200 bg-red-50"
+                      className="px-3 py-10 text-center text-red-500 font-bold italic border-t border-gray-200 bg-red-50"
                     >
-                      KHÔNG TÌM THẤY YÊU CẦU NÀO TRONG DANH SÁCH
+                      KHÔNG TÌM THẤY YÊU CẦU NÀO
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Card View (Mobile) */}
+          <div className="md:hidden divide-y divide-gray-100">
+            {isLoading ? (
+               <div className="p-10 text-center text-gray-400 grayscale">Đang tải...</div>
+            ) : paginatedRequests.length > 0 ? (
+               paginatedRequests.map((req) => (
+                 <div 
+                   key={req.id} 
+                   className={cn(
+                     "p-4 active:bg-blue-50 transition-colors relative",
+                     selectedRequests.includes(req.id) ? "bg-blue-50/50" : "bg-white"
+                   )}
+                   onClick={() => setSelectedRequest(req)}
+                 >
+                   <div className="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-active:bg-blue-500" />
+                   
+                   <div className="flex justify-between items-start mb-2">
+                     <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 rounded border-gray-300"
+                          checked={selectedRequests.includes(req.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            toggleSelect(req.id);
+                          }}
+                        />
+                        <div>
+                          <p className="text-[13px] font-black text-[#0A58A3] uppercase tracking-tighter leading-none">{req.orderCode}</p>
+                          <p className="text-[10px] text-gray-500 mt-1 font-bold">{formatDate(req.createdAt, "dd/MM/yyyy HH:mm")}</p>
+                        </div>
+                     </div>
+                     <Badge status={req.status} className="!text-[9px] !px-1.5 !py-0.5 shadow-sm" />
+                   </div>
+
+                   <div className="grid grid-cols-2 gap-3 my-3">
+                     <div className="min-w-0">
+                        <p className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Khách hàng</p>
+                        <p className="text-[12px] font-bold text-gray-800 truncate">{req.displayName || "Khách hàng"}</p>
+                     </div>
+                     <div className="text-right min-w-0">
+                        <p className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Số tiền hoàn</p>
+                        <p className="text-[13px] font-black text-[#FF6600]">
+                          {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(req.amount)}
+                        </p>
+                     </div>
+                   </div>
+
+                   <div className="bg-gray-50/80 p-2 rounded border border-gray-100 mb-3">
+                      <p className="text-[9px] text-gray-400 font-bold uppercase mb-1">Thông tin nhận tiền</p>
+                      <div className="flex justify-between items-center">
+                        <p className="text-[11px] font-bold text-gray-700">{req.bankName}</p>
+                        <p className="text-[11px] font-black text-blue-900 tracking-tight">{req.accountNumber}</p>
+                      </div>
+                   </div>
+
+                   <div className="flex justify-between items-center">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedRequest(req);
+                            setIsEditingRequest(req);
+                            setEditForm(req);
+                          }}
+                          className="p-1.5 bg-blue-50 text-blue-700 rounded border border-blue-200"
+                        >
+                          <Edit2 size={12} />
+                        </button>
+                        <button
+                          onClick={(e) => handleToggleVisibility(req, e)}
+                          className={cn(
+                            "p-1.5 rounded border transition-colors",
+                            req.isVisible !== false ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-gray-50 text-gray-400 border-gray-200"
+                          )}
+                        >
+                          {req.isVisible !== false ? <Eye size={12} /> : <EyeOff size={12} />}
+                        </button>
+                      </div>
+                      <button className="text-[11px] font-bold text-[#06427D] uppercase flex items-center gap-1">
+                        Chi tiết <ChevronRight size={10} />
+                      </button>
+                   </div>
+                 </div>
+               ))
+            ) : (
+               <div className="p-10 text-center text-red-500 font-bold bg-red-50">KHÔNG CÓ DỮ LIỆU</div>
+            )}
           </div>
         </div>
         {!isLoading && filteredRequests.length > requestsPerPage && (

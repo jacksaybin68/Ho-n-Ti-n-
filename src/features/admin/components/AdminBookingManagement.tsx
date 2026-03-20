@@ -167,22 +167,22 @@ export function AdminBookingManagement({ codes }: AdminBookingManagementProps) {
 
   return (
     <div className="flex flex-col gap-5 w-full">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-[#0A73D1] shadow-sm rounded p-3">
-          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-tight mb-1">Tổng mã PNR</p>
-          <div className="text-2xl font-black text-blue-900 leading-none">{stats.total}</div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <div className="bg-white border border-[#0A73D1] shadow-sm rounded p-2.5 md:p-3">
+          <p className="text-[10px] md:text-[11px] font-bold text-gray-500 uppercase tracking-tight mb-0.5">Tổng PNR</p>
+          <div className="text-xl md:text-2xl font-black text-blue-900 leading-none">{stats.total}</div>
         </div>
-        <div className="bg-white border border-emerald-500 shadow-sm rounded p-3">
-          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-tight mb-1">Còn hiệu lực</p>
-          <p className="text-2xl font-black text-emerald-600 leading-none">{stats.valid}</p>
+        <div className="bg-white border border-emerald-500 shadow-sm rounded p-2.5 md:p-3">
+          <p className="text-[10px] md:text-[11px] font-bold text-gray-500 uppercase tracking-tight mb-0.5">Hiệu lực</p>
+          <p className="text-xl md:text-2xl font-black text-emerald-600 leading-none">{stats.valid}</p>
         </div>
-        <div className="bg-white border border-red-500 shadow-sm rounded p-3">
-          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-tight mb-1">Đã hoàn tiền</p>
-          <p className="text-2xl font-black text-red-600 leading-none">{stats.refunded}</p>
+        <div className="bg-white border border-red-500 shadow-sm rounded p-2.5 md:p-3">
+          <p className="text-[10px] md:text-[11px] font-bold text-gray-500 uppercase tracking-tight mb-0.5">Hoàn tiền</p>
+          <p className="text-xl md:text-2xl font-black text-red-600 leading-none">{stats.refunded}</p>
         </div>
-        <div className="bg-[#06427D] border border-[#0A73D1] shadow-sm rounded p-3 text-white">
-          <p className="text-[11px] font-bold text-blue-200 uppercase tracking-tight mb-1">Tổng giá trị</p>
-          <p className="text-xl font-black leading-none truncate mt-2">
+        <div className="bg-[#06427D] border border-[#0A73D1] shadow-sm rounded p-2.5 md:p-3 text-white">
+          <p className="text-[10px] md:text-[11px] font-bold text-blue-200 uppercase tracking-tight mb-0.5">Tổng giá trị</p>
+          <p className="text-lg md:text-xl font-black leading-none truncate mt-1">
             {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(stats.totalAmount)}
           </p>
         </div>
@@ -228,7 +228,8 @@ export function AdminBookingManagement({ codes }: AdminBookingManagementProps) {
             </div>
           </div>
 
-          <div className="overflow-x-auto border border-gray-200">
+          {/* Table View (Desktop) */}
+          <div className="hidden md:block overflow-x-auto border border-gray-200">
             <table className="w-full text-left text-[13px] text-gray-700 min-w-[800px]">
               <thead>
                 <tr className="bg-[#f5f5f5] text-[#0A58A3] border-b border-gray-300">
@@ -243,8 +244,8 @@ export function AdminBookingManagement({ codes }: AdminBookingManagementProps) {
               <tbody className="divide-y divide-gray-200">
                 {paginatedCodes.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-3 py-6 text-center text-red-500 font-bold italic border-t border-gray-200 bg-red-50">
-                      KHÔNG TÌM THẤY MÃ ĐẶT CHỖ PHÙ HỢP
+                    <td colSpan={6} className="px-3 py-10 text-center text-red-500 font-bold italic border-t border-gray-200 bg-red-50">
+                      KHÔNG TÌM THẤY MÃ PHÙ HỢP
                     </td>
                   </tr>
                 ) : (
@@ -296,6 +297,62 @@ export function AdminBookingManagement({ codes }: AdminBookingManagementProps) {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Card View (Mobile) */}
+          <div className="md:hidden border border-gray-200 rounded overflow-hidden divide-y divide-gray-100">
+            {paginatedCodes.length === 0 ? (
+              <div className="p-10 text-center text-red-500 font-bold bg-red-50">KHÔNG CÓ DỮ LIỆU</div>
+            ) : (
+              paginatedCodes.map(code => (
+                <div key={code.id} className="p-4 bg-white active:bg-blue-50 transition-colors">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="text-[14px] font-black text-[#0A58A3] tracking-wider font-mono leading-none">{code.orderCode}</p>
+                      <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
+                        <Plane size={11} className="text-gray-400" />
+                        <span className="font-bold uppercase">{code.flightNumber}</span>
+                      </p>
+                    </div>
+                    <span className={`inline-flex items-center px-2 py-0.5 text-[9px] font-black rounded uppercase shadow-sm ${
+                      code.status === 'valid'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {code.status === 'valid' ? 'HIỆU LỰC' : 'ĐÃ HOÀN'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 my-3">
+                    <div className="min-w-0">
+                      <p className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Hành khách</p>
+                      <p className="text-[12px] font-bold text-gray-800 truncate uppercase">{code.passengerName}</p>
+                    </div>
+                    <div className="text-right min-w-0">
+                      <p className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Số tiền</p>
+                      <p className="text-[13px] font-black text-orange-600">
+                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(code.amount)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                    <button
+                      onClick={() => openEditForm(code)}
+                      className="px-3 py-1.5 text-[10px] font-bold bg-orange-50 text-orange-700 border border-orange-200 rounded uppercase flex items-center gap-1"
+                    >
+                      <Edit2 size={10} /> Sửa
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(code)}
+                      className="px-3 py-1.5 text-[10px] font-bold bg-red-50 text-red-700 border border-red-200 rounded uppercase flex items-center gap-1"
+                    >
+                      <Trash2 size={10} /> Xóa
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
           {!isSaving && filteredCodes.length > codesPerPage && (
             <div className="mt-3">

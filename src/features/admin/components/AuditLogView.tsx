@@ -84,7 +84,7 @@ export function AuditLogView({ logs }: AuditLogViewProps) {
                 paginatedLogs.map(log => (
                   <tr key={log.id} className="hover:bg-blue-50 transition-colors">
                     <td className="px-3 py-2.5 border-r border-gray-100 text-[12px] text-gray-600">
-                      {formatDate(log.timestamp, 'dd/MM/yyyy HH:mm:ss')}
+                      {formatDate(log.createdAt, 'dd/MM/yyyy HH:mm:ss')}
                     </td>
                     <td className="px-3 py-2.5 border-r border-gray-100">
                       <div className="flex items-center gap-2">

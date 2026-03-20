@@ -52,11 +52,12 @@ export interface AuditLog {
   id: string;
   adminId: string;
   adminEmail: string;
-  action: 'update_user' | 'delete_user' | 'update_request' | 'bulk_action';
+  action: 'update_user' | 'delete_user' | 'update_request' | 'bulk_action' | 'create_user';
   targetId: string;
   targetType: 'user' | 'refundRequest';
   changes: Record<string, { old: any; new: any }>;
-  timestamp: any;
+  createdAt: any;
+  affectedIds?: string[]; // Added for bulk actions
 }
 
 export interface ChatMessage {

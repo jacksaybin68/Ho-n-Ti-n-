@@ -128,41 +128,41 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ requests, profile,
     <div className="flex flex-col gap-5 w-full">
       
       {/* Abay-style Status Blocks */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white border border-[#0A73D1] shadow-sm rounded flex items-center p-3 gap-3">
-          <div className="w-10 h-10 bg-blue-100 flex items-center justify-center rounded-full text-blue-700">
-            <Ticket size={20} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+        <div className="bg-white border border-[#0A73D1] shadow-sm rounded flex items-center p-2 md:p-3 gap-2 md:gap-3">
+          <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-100 flex items-center justify-center rounded-full text-blue-700 shrink-0">
+            <Ticket size={16} className="md:w-5 md:h-5" />
           </div>
-          <div>
-            <div className="text-[11px] text-gray-500 font-bold uppercase tracking-tight">Tổng yêu cầu</div>
-            <div className="text-xl font-black text-blue-900">{requests.length}</div>
-          </div>
-        </div>
-        <div className="bg-white border border-[#FF8800] shadow-sm rounded flex items-center p-3 gap-3">
-          <div className="w-10 h-10 bg-orange-100 flex items-center justify-center rounded-full text-[#FF8800]">
-            <Clock size={20} />
-          </div>
-          <div>
-            <div className="text-[11px] text-gray-500 font-bold uppercase tracking-tight">Đang chờ xử lý</div>
-            <div className="text-xl font-black text-orange-600">{requests.filter(r => r.status === 'pending' || r.status === 'approved').length}</div>
+          <div className="min-w-0">
+            <div className="text-[9px] md:text-[11px] text-gray-500 font-bold uppercase tracking-tight truncate">Tổng yêu cầu</div>
+            <div className="text-base md:text-xl font-black text-blue-900 leading-none">{requests.length}</div>
           </div>
         </div>
-        <div className="bg-white border border-purple-400 shadow-sm rounded flex items-center p-3 gap-3">
-          <div className="w-10 h-10 bg-purple-100 flex items-center justify-center rounded-full text-purple-600">
-            <RefreshCw size={20} />
+        <div className="bg-white border border-[#FF8800] shadow-sm rounded flex items-center p-2 md:p-3 gap-2 md:gap-3">
+          <div className="w-8 h-8 md:w-10 md:h-10 bg-orange-100 flex items-center justify-center rounded-full text-[#FF8800] shrink-0">
+            <Clock size={16} className="md:w-5 md:h-5" />
           </div>
-          <div>
-            <div className="text-[11px] text-gray-500 font-bold uppercase tracking-tight">Đang chuyển tiền</div>
-            <div className="text-xl font-black text-purple-700">{requests.filter(r => r.status === 'processing').length}</div>
+          <div className="min-w-0">
+            <div className="text-[9px] md:text-[11px] text-gray-500 font-bold uppercase tracking-tight truncate">Đang chờ</div>
+            <div className="text-base md:text-xl font-black text-orange-600 leading-none">{requests.filter(r => r.status === 'pending' || r.status === 'approved').length}</div>
           </div>
         </div>
-        <div className="bg-white border border-emerald-500 shadow-sm rounded flex items-center p-3 gap-3">
-          <div className="w-10 h-10 bg-emerald-100 flex items-center justify-center rounded-full text-emerald-600">
-            <CheckCircle2 size={20} />
+        <div className="bg-white border border-purple-400 shadow-sm rounded flex items-center p-2 md:p-3 gap-2 md:gap-3">
+          <div className="w-8 h-8 md:w-10 md:h-10 bg-purple-100 flex items-center justify-center rounded-full text-purple-600 shrink-0">
+            <RefreshCw size={16} className="md:w-5 md:h-5" />
           </div>
-          <div>
-            <div className="text-[11px] text-gray-500 font-bold uppercase tracking-tight">Đã hoàn tất</div>
-            <div className="text-xl font-black text-emerald-700">{requests.filter(r => r.status === 'completed').length}</div>
+          <div className="min-w-0">
+            <div className="text-[9px] md:text-[11px] text-gray-500 font-bold uppercase tracking-tight truncate">Chuyển tiền</div>
+            <div className="text-base md:text-xl font-black text-purple-700 leading-none">{requests.filter(r => r.status === 'processing').length}</div>
+          </div>
+        </div>
+        <div className="bg-white border border-emerald-500 shadow-sm rounded flex items-center p-2 md:p-3 gap-2 md:gap-3">
+          <div className="w-8 h-8 md:w-10 md:h-10 bg-emerald-100 flex items-center justify-center rounded-full text-emerald-600 shrink-0">
+            <CheckCircle2 size={16} className="md:w-5 md:h-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-[9px] md:text-[11px] text-gray-500 font-bold uppercase tracking-tight truncate">Hoàn tất</div>
+            <div className="text-base md:text-xl font-black text-emerald-700 leading-none">{requests.filter(r => r.status === 'completed').length}</div>
           </div>
         </div>
       </div>
@@ -196,50 +196,48 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ requests, profile,
 
           <div className="p-4">
             {/* Filter Bar */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-3 bg-gray-50 p-2.5 border border-gray-200 rounded mb-3">
-              <div className="flex items-center gap-2 w-full md:w-auto">
-                <div className="relative flex-1 md:w-64">
+            <div className="flex flex-col gap-3 bg-gray-50 p-2 border border-gray-200 rounded mb-3">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="relative w-full sm:max-w-xs">
                   <input
                     type="text"
-                    placeholder="Tìm mã PNR, ngân hàng, số TK..."
+                    placeholder="Tìm PNR, ngân hàng..."
                     value={pnrSearch}
                     onChange={e => setPnrSearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-gray-300 rounded outline-none focus:border-blue-500 bg-white"
+                    className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-gray-300 rounded outline-none focus:border-blue-500 bg-white shadow-sm"
                   />
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
                 </div>
+                
+                <button
+                  onClick={exportToCSV}
+                  disabled={exportLoading || filteredRequests.length === 0}
+                  className="w-full sm:w-auto whitespace-nowrap px-4 py-1.5 text-[12px] font-bold rounded bg-emerald-50 text-emerald-700 border border-emerald-600 hover:bg-emerald-600 hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 uppercase tracking-tight"
+                >
+                  {exportLoading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                  XUẤT CSV
+                </button>
               </div>
 
-              <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
                 {(['all', 'pending', 'approved', 'processing', 'completed', 'rejected'] as const).map(f => (
                   <button
                     key={f}
                     onClick={() => setStatusFilter(f)}
-                    className={`whitespace-nowrap px-3 py-1 text-[12px] font-bold rounded transition-colors ${
+                    className={`whitespace-nowrap px-3 py-1.5 text-[11px] md:text-[12px] font-bold rounded transition-all ${
                       statusFilter === f
-                        ? 'bg-blue-600 text-white shadow-sm'
+                        ? 'bg-blue-600 text-white shadow-md'
                         : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
                     }`}
                   >
                     {getStatusLabel(f)}
                   </button>
                 ))}
-                
-                <div className="w-px h-6 bg-gray-300 mx-1 hidden md:block"></div>
-                
-                <button
-                  onClick={exportToCSV}
-                  disabled={exportLoading || filteredRequests.length === 0}
-                  className="whitespace-nowrap px-3 py-1 text-[12px] font-bold rounded bg-emerald-50 text-emerald-700 border border-emerald-600 hover:bg-emerald-600 hover:text-white transition-colors disabled:opacity-50 flex items-center gap-1"
-                >
-                  {exportLoading ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
-                  XUẤT CSV
-                </button>
               </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto w-full border border-gray-200">
+            {/* View for Desktop (Table) */}
+            <div className="hidden md:block overflow-x-auto w-full border border-gray-200">
               <table className="w-full text-left text-[13px] text-gray-700 min-w-[700px]">
                 <thead>
                   <tr className="bg-[#f5f5f5] text-[#0A58A3] border-b border-gray-300">
@@ -279,7 +277,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ requests, profile,
                         className="hover:bg-blue-50 transition-colors cursor-pointer group"
                         onClick={() => setSelectedRequest(req)}
                       >
-                        <td className="px-3 py-2.5 font-bold text-black border-r border-r border-gray-100">
+                        <td className="px-3 py-2.5 font-bold text-black border-r border-gray-100">
                           {req.orderCode}
                         </td>
                         <td className="px-3 py-2.5 text-[#FF6600] font-black tracking-tight border-r border-gray-100">
@@ -325,6 +323,56 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ requests, profile,
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* View for Mobile (Cards) */}
+            <div className="md:hidden space-y-3">
+              {isLoading ? (
+                <div className="text-center py-6 text-gray-400">Đang tải...</div>
+              ) : paginatedRequests.length === 0 ? (
+                <div className="text-center py-10 bg-red-50 text-red-500 font-bold rounded border border-red-100">KHÔNG CÓ DỮ LIỆU</div>
+              ) : (
+                paginatedRequests.map((req) => (
+                  <div 
+                    key={req.id} 
+                    className="bg-white border-2 border-gray-100 rounded-lg p-3 shadow-sm active:bg-blue-50 transition-colors"
+                    onClick={() => setSelectedRequest(req)}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <div className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Mã PNR</div>
+                        <div className="text-lg font-black text-blue-900">{req.orderCode}</div>
+                      </div>
+                      <Badge status={req.status} className="!text-[9px] shadow-sm uppercase font-black" />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 py-2 border-y border-dashed border-gray-200 my-2">
+                       <div>
+                         <div className="text-[10px] text-gray-400 uppercase font-bold">Số tiền hoàn</div>
+                         <div className="text-[14px] font-black text-[#FF6600]">
+                           {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(req.amount)}
+                         </div>
+                       </div>
+                       <div className="text-right">
+                         <div className="text-[10px] text-gray-400 uppercase font-bold">Mã Phiếu</div>
+                         <div className="text-[13px] font-bold text-gray-700">{req.refundSlipCode || '-'}</div>
+                       </div>
+                    </div>
+
+                    <div className="flex justify-between items-end">
+                      <div className="flex flex-col gap-0.5">
+                        <div className="text-[10px] text-gray-400 uppercase font-bold">Ngày gửi</div>
+                        <div className="text-[11px] text-gray-600 font-medium">
+                          {req.createdAt ? format(req.createdAt.toDate(), 'dd/MM/yyyy HH:mm') : '-'}
+                        </div>
+                      </div>
+                      <button className="text-[11px] font-bold text-white bg-[#06427D] px-3 py-1 rounded flex items-center gap-1 uppercase">
+                        Xem chi tiết <ChevronRight size={10} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
             {/* Pagination */}

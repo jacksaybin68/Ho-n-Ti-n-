@@ -58,7 +58,7 @@ export function ProfileSettings({ profile }: ProfileSettingsProps) {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <Card className="p-8">
+      <Card className="p-4 sm:p-8">
         <div className="flex items-center gap-4 mb-8">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm shadow-blue-200/50">
             <UserIcon size={32} />

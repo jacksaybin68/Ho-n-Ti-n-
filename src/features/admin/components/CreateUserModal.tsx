@@ -35,7 +35,8 @@ export function CreateUserModal({ onClose, adminProfile }: CreateUserModalProps)
     setError(null);
     setSuccess(false);
     try {
-      const uid = 'user_' + Date.now();
+      // Use a valid UUID to match the Postgres UUID type
+      const uid = crypto.randomUUID();
       const email = formData.email.trim();
 
       const userData: UserProfile = {
@@ -50,9 +51,9 @@ export function CreateUserModal({ onClose, adminProfile }: CreateUserModalProps)
 
       await setDoc(doc(db, 'users', uid), userData);
 
-      const users: any[] = JSON.parse(localStorage.getItem('mockUsers') || '[]');
-      users.push({ uid, email, password: formData.password, displayName: formData.displayName.trim(), phoneNumber: formData.sdt.replace(/\D/g, ''), role: 'user' });
-      localStorage.setItem('mockUsers', JSON.stringify(users));
+      // We skip localstorage mock as we are now fully on Supabase.
+      // Note: Admin cannot create Auth users directly from frontend without Service Role Key.
+      // For now, this only creates the User Profile. The actual password won't be set in Supabase Auth.
 
       await addDoc(collection(db, 'adminAuditLog'), {
         adminId: adminProfile.uid,
@@ -65,7 +66,7 @@ export function CreateUserModal({ onClose, adminProfile }: CreateUserModalProps)
           sdt: { old: '', new: formData.sdt.replace(/\D/g, '') },
           email: { old: '', new: email },
         },
-        timestamp: serverTimestamp(),
+        createdAt: serverTimestamp(),
       });
 
       setSuccess(true);

@@ -286,6 +286,43 @@ h4 {
       margin-bottom: 2rem;
     }
   }
+
+  /* Custom Container Utilities */
+  .container-safe {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 1020px) {
+    .container-safe {
+      max-width: 1020px;
+    }
+  }
+
+  /* Hide scrollbars but keep functionality */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Base adjustment for mobile text */
+@media (max-width: 640px) {
+  .text-mobile-xs {
+    font-size: 0.65rem;
+  }
+  .text-mobile-sm {
+    font-size: 0.75rem;
+  }
+  .text-mobile-base {
+    font-size: 0.875rem;
+  }
 }
 
 /* Touch-friendly targets */
@@ -349,6 +386,17 @@ h4 {
 
 .status-rejected {
   @apply bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200/50 dark:border-rose-800/30;
+}
+
+/* Mobile-friendly Button adjustments */
+@media (max-width: 480px) {
+  .btn-mobile-icon-only {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  .btn-mobile-icon-only span {
+    display: none;
+  }
 }
 
 /* Animated Counter */

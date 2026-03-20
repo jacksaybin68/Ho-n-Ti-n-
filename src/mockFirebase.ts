@@ -1,408 +1,263 @@
 // File: src/mockFirebase.ts
-// LocalStorage-based mock of Firebase API to remove Firebase completely.
+// This file now uses SUPABASE as the backend, but provides a Firebase-like API
+// to maintain compatibility with the existing UI code.
+
+import { supabase } from './lib/supabaseClient';
 
 export const db = {};
-export const auth = { currentUser: null };
-export const messaging = {};
-
-export const BUILT_IN_ADMINS = [
-  { uid: 'admin_123',        email: 'admin@aerorefund.com',            password: 'Matkhau1', displayName: 'Admin',                phoneNumber: '' },
-  { uid: 'admin_0968686868', email: 'hotro@aerorefund.com',            password: 'Admin123', displayName: 'Admin 0968686868',      phoneNumber: '0968686868' },
-  { uid: 'user_0356812812', email: 'nguyenvana@aerorefund.com',       password: '0356812812', displayName: 'Nguyễn Văn A',        phoneNumber: '0356812812' },
-];
-
-// Cache để tránh đọc localStorage nhiều lần
-let _cachedUsers: any[] | null = null;
-const getCachedUsers = () => {
-  if (_cachedUsers === null) {
-    _cachedUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
+export const auth = {
+  get currentUser() {
+    // We return a proxy or a real user if possible
+    const { data } = (async () => await supabase.auth.getUser())() as any;
+    return data?.user || null;
   }
-  return _cachedUsers;
 };
-const invalidateUserCache = () => { _cachedUsers = null; };
 
-// Seed / upsert built-in admin accounts on every load
-if (typeof localStorage !== 'undefined') {
-  const users = getCachedUsers();
-  for (const admin of BUILT_IN_ADMINS) {
-    const idx = users.findIndex((u: any) => u.uid === admin.uid);
-    if (idx >= 0) {
-      users[idx] = { ...users[idx], ...admin };
-    } else {
-      users.push(admin);
+// Helper to convert Firebase-like data to Postgres-friendly names
+const toSnake = (str: string) => str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+
+const toSnakeCase = (obj: any, table?: string) => {
+  if (!obj || typeof obj !== 'object') return obj;
+  const newObj: any = {};
+  for (const key in obj) {
+    let newKey = toSnake(key);
+    // Special case: `uid` in UserProfile maps to `id` in `users` table
+    if (table === 'users' && key === 'uid') newKey = 'id';
+    // Special case: `userId` in RefundRequest maps to `user_id` (handled by toSnake)
+    newObj[newKey] = obj[key];
+  }
+  return newObj;
+};
+
+const fromSnakeCase = (obj: any) => {
+  if (!obj || typeof obj !== 'object') return obj;
+  const newObj: any = {};
+  for (const key in obj) {
+    const camelKey = key.replace(/(_\w)/g, m => m[1].toUpperCase());
+    let value = obj[key];
+    
+    // Convert ISO date strings to Firebase-compatible Timestamp-like objects
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
+      const date = new Date(value);
+      const timestampObj = {
+        toDate: () => date,
+        toMillis: () => date.getTime(),
+        seconds: Math.floor(date.getTime() / 1000),
+        nanoseconds: (date.getTime() % 1000) * 1e6,
+        toISOString: () => value,
+        toString: () => value
+      };
+      // We keep the original string but add the methods if possible, 
+      // but in JS strings are primitives. So we use an object that acts like both.
+      value = Object.assign(new String(value), timestampObj);
     }
+    
+    newObj[camelKey] = value;
   }
-  localStorage.setItem('mockUsers', JSON.stringify(users));
-  _cachedUsers = users;
-}
-
-const findUserByEmailAndPassword = (email: string, pass: string) => {
-  const stored = getCachedUsers().find((u: any) => u.email === email && u.password === pass);
-  if (stored) return stored;
-  return BUILT_IN_ADMINS.find((u: any) => u.email === email && u.password === pass) || null;
+  return newObj;
 };
 
-const isAdminEmail = (email: string) => {
-  return BUILT_IN_ADMINS.filter(a => !a.uid.startsWith('user_')).some(a => a.email === email);
-};
-
+// AUTH MOCKS
 export const signInWithEmailAndPassword = async (authIns: any, email: string, pass: string) => {
-  const user = findUserByEmailAndPassword(email, pass);
-
-  if (!user) {
-    const err: any = new Error('Not found');
-    err.code = 'auth/user-not-found';
-    throw err;
-  }
-
-  const isAdmin = isAdminEmail(email);
-
-  // ƯU TIÊN: Lấy displayName từ Firestore profile (col_users) nếu đã tồn tại
-  let displayNameFromProfile: string | undefined;
-  try {
-    const existingProfiles = JSON.parse(localStorage.getItem('col_users') || '[]');
-    const storedProfile = existingProfiles.find((p: any) => p.uid === user.uid);
-    if (storedProfile && storedProfile.displayName) {
-      displayNameFromProfile = storedProfile.displayName;
-    }
-  } catch {}
-
-  // Ưu tiên Firestore profile > BUILT_IN_ADMINS > fallback
-  const displayNameToUse = displayNameFromProfile || user.displayName || email.split('@')[0];
-  const newProfile = {
-    uid: user.uid,
-    email: email,
-    phoneNumber: user.phoneNumber || '',
-    displayName: displayNameToUse,
-    role: isAdmin ? 'admin' : 'user',
-    status: 'active',
-  };
-
-  // Đồng bộ ngược displayName vào mockUsers cache để giữ nhất quán
-  const cachedUsers = getCachedUsers();
-  const cachedIdx = cachedUsers.findIndex((u: any) => u.uid === user.uid);
-  if (cachedIdx >= 0) {
-    cachedUsers[cachedIdx].displayName = displayNameToUse;
-    localStorage.setItem('mockUsers', JSON.stringify(dehydrateData(cachedUsers)));
-    invalidateUserCache();
-  }
-
-  const mockFirestore = (window as any).__mockFirestore = (window as any).__mockFirestore || {};
-
-  // Seed/update Firestore profile
-  const profilePath = 'users/' + user.uid;
-  if (!mockFirestore[profilePath]) {
-    mockFirestore[profilePath] = newProfile;
-    const existingProfiles = JSON.parse(localStorage.getItem('col_users') || '[]');
-    const existingIdx = existingProfiles.findIndex((p: any) => p.uid === user.uid);
-    if (existingIdx >= 0) {
-      existingProfiles[existingIdx] = { ...existingProfiles[existingIdx], ...newProfile };
-    } else {
-      existingProfiles.push({ ...newProfile, id: user.uid });
-    }
-    localStorage.setItem('col_users', JSON.stringify(existingProfiles));
-  } else {
-    const existingProfiles = JSON.parse(localStorage.getItem('col_users') || '[]');
-    const existingIdx = existingProfiles.findIndex((p: any) => p.uid === user.uid);
-    if (existingIdx >= 0) {
-      const updated = { ...existingProfiles[existingIdx], ...newProfile, displayName: displayNameToUse };
-      existingProfiles[existingIdx] = updated;
-      localStorage.setItem('col_users', JSON.stringify(existingProfiles));
-      mockFirestore[profilePath] = updated;
-    }
-  }
-
-  // Lưu mockUser với displayName đã đồng bộ
-  const mockUser = { uid: user.uid, email, phoneNumber: user.phoneNumber, displayName: displayNameToUse };
-  localStorage.setItem('mockUser', JSON.stringify(dehydrateData(mockUser)));
-  return { user: mockUser };
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+  if (error) throw error;
+  
+  const user = { ...data.user, uid: data.user.id } as any;
+  localStorage.setItem('mockUser', JSON.stringify({ uid: user.uid, email: user.email }));
+  return { user };
 };
 
 export const onAuthStateChanged = (authIns: any, callback: any) => {
-  const userStr = localStorage.getItem('mockUser');
-  const user = userStr ? processData(JSON.parse(userStr)) : null;
-
-  if (user) {
-    // Luôn ưu tiên Firestore profile (col_users) cho displayName thật
-    try {
-      const storedUsers = JSON.parse(localStorage.getItem('col_users') || '[]');
-      const storedProfile = storedUsers.find((p: any) => p.uid === user.uid);
-      if (storedProfile && storedProfile.displayName) {
-        user.displayName = storedProfile.displayName;
-      }
-    } catch {}
-  }
-
-  authIns.currentUser = user;
-  callback(user);
-  return () => {};
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const user = session?.user ? { ...session.user, uid: session.user.id } : null;
+    if (user) {
+        localStorage.setItem('mockUser', JSON.stringify({ uid: user.uid, email: user.email }));
+    } else {
+        localStorage.removeItem('mockUser');
+    }
+    callback(user);
+  });
+  return () => subscription.unsubscribe();
 };
 
 export const signOut = async (authIns: any) => {
+  await supabase.auth.signOut();
   localStorage.removeItem('mockUser');
   window.location.reload();
 };
 
 export const createUserWithEmailAndPassword = async (authIns: any, email: string, pass: string) => {
-  const users = getCachedUsers();
-  if (users.find((u: any) => u.email === email)) {
-    const err: any = new Error('Exists');
-    err.code = 'auth/email-already-in-use';
-    throw err;
-  }
-  const mockUser = { uid: 'user_' + Date.now(), email, password: pass };
-  users.push(mockUser);
-  localStorage.setItem('mockUsers', JSON.stringify(dehydrateData(users)));
-  localStorage.setItem('mockUser', JSON.stringify(dehydrateData(mockUser)));
-  invalidateUserCache();
-  return { user: mockUser };
+  const { data, error } = await supabase.auth.signUp({ email, password: pass });
+  if (error) throw error;
+  const user = { ...data.user, uid: data.user?.id } as any;
+  return { user };
 };
 
 export const updateProfile = async (user: any, profile: any) => {
-  Object.assign(user, profile);
-  localStorage.setItem('mockUser', JSON.stringify(dehydrateData(user)));
-  
-  const users = getCachedUsers();
-  const index = users.findIndex((u: any) => u.uid === user.uid);
-  if (index >= 0) {
-    users[index] = { ...users[index], ...profile };
-    localStorage.setItem('mockUsers', JSON.stringify(dehydrateData(users)));
-    invalidateUserCache();
-  }
+  const { error } = await supabase.auth.updateUser({
+    data: { display_name: profile.displayName }
+  });
+  if (error) throw error;
 };
 
 export const adminUpdateUserAuth = async (uid: string, newEmail?: string, newPassword?: string) => {
-  const users = getCachedUsers();
-  const index = users.findIndex((u: any) => u.uid === uid);
-  if (index >= 0) {
-    if (newEmail) users[index].email = newEmail;
-    if (newPassword) users[index].password = newPassword;
-    localStorage.setItem('mockUsers', JSON.stringify(dehydrateData(users)));
-    invalidateUserCache();
-  }
+  // In Supabase, admin actions require the Service Role Key which we shouldn't put in the frontend.
+  // For now, we'll log this as a placeholder or use an edge function if available.
+  console.log('Admin update user auth requested for:', uid);
 };
-
-export type FirebaseUser = any;
-
-// MESSAGING MOCKS
-export const getToken = async (...args: any[]) => 'mock-token';
 
 // FIRESTORE MOCKS
-const listeners: any[] = [];
-const emitChange = () => listeners.forEach(l => l());
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
-    if (e.key && e.key.startsWith('col_')) {
-      emitChange();
-    }
-  });
-}
-
-const wrapTimestamp = (val: any) => {
-  if (val && typeof val === 'object' && val.toDate) return val;
-  const date = (typeof val === 'number') ? new Date(val) : (val instanceof Date ? val : new Date());
-  return {
-    toDate: () => date,
-    toMillis: () => date.getTime(),
-    seconds: Math.floor(date.getTime() / 1000),
-    nanoseconds: (date.getTime() % 1000) * 1e6
-  };
-};
-
-const processData = (data: any): any => {
-  if (!data) return data;
-  if (Array.isArray(data)) return data.map(processData);
-  if (typeof data === 'object') {
-    const newData = { ...data };
-    const timestampFields = ['createdAt', 'updatedAt', 'timestamp', 'processingTime', 'lastReadAt'];
-    for (const key of Object.keys(newData)) {
-      if (timestampFields.includes(key) && newData[key] !== null && newData[key] !== undefined) {
-        newData[key] = wrapTimestamp(newData[key]);
-      } else if (typeof newData[key] === 'object') {
-        newData[key] = processData(newData[key]);
-      }
-    }
-    return newData;
-  }
-  return data;
-};
-
-export const serverTimestamp = () => wrapTimestamp(Date.now());
+export const serverTimestamp = () => new Date().toISOString();
 export const Timestamp = {
-  fromDate: (date: Date) => wrapTimestamp(date),
-  now: () => wrapTimestamp(Date.now())
+  fromDate: (date: Date) => date.toISOString(),
+  now: () => new Date().toISOString()
 };
 
 export const doc = (dbIns: any, path: string, ...segments: string[]) => {
-  let docId = segments[segments.length - 1];
-  let colPath = path;
-  if (segments.length > 0) {
-    colPath = path;
-    docId = segments.join('/');
-  }
-  if (!docId && path.includes('/')) {
-      const parts = path.split('/');
-      docId = parts.pop() || '';
-      colPath = parts.join('/');
-  }
-  return { id: docId, path: colPath };
+  const parts = [path, ...segments];
+  const id = parts.pop() || '';
+  let table = toSnake(parts.join('_'));
+  if (table === 'refund_requests') table = 'refund_requests';
+  if (table === 'admin_audit_log') table = 'audit_logs';
+  if (table === 'audit_log') table = 'audit_logs';
+  if (table === 'audit_logs') table = 'audit_logs';
+  return { id, table };
 };
 
-export const collection = (dbIns: any, path: string, ...segments: string[]): { path: string } => {
-  let fullPath = path;
-  if (segments.length > 0) {
-    fullPath = [path, ...segments].join('/');
+export const collection = (dbIns: any, path: string, ...segments: string[]) => {
+  if (path === 'chats' && segments.length === 2 && segments[1] === 'messages') {
+    return { table: 'messages', chatId: segments[0] };
   }
-  return { path: fullPath };
-};
-
-const getStorageCol = (path: string) => JSON.parse(localStorage.getItem('col_' + path) || '[]');
-const dehydrateData = (data: any): any => {
-  if (!data) return data;
-  if (Array.isArray(data)) return data.map(dehydrateData);
-  if (typeof data === 'object') {
-    if (data.toDate && typeof data.toDate === 'function') {
-      return data.toMillis ? data.toMillis() : new Date(data.toDate()).getTime();
-    }
-    const newData: any = {};
-    for (const key of Object.keys(data)) {
-      newData[key] = dehydrateData(data[key]);
-    }
-    return newData;
-  }
-  return data;
-};
-
-const setStorageCol = (path: string, data: any[]) => {
-  localStorage.setItem('col_' + path, JSON.stringify(dehydrateData(data)));
-  emitChange();
+  let table = toSnake([path, ...segments].join('_'));
+  if (table === 'refund_requests') table = 'refund_requests';
+  if (table === 'admin_audit_log') table = 'audit_logs';
+  if (table === 'audit_log') table = 'audit_logs';
+  if (table === 'audit_logs') table = 'audit_logs';
+  return { table };
 };
 
 export const getDoc = async (docRef: any) => {
-  const col = getStorageCol(docRef.path);
-  const data = col.find((item: any) => item.id === docRef.id);
+  const { data, error } = await supabase
+    .from(docRef.table)
+    .select('*')
+    .eq('id', docRef.id)
+    .single();
+    
   return {
-    exists: () => !!data,
-    data: () => processData(data),
+    exists: () => !!data && !error,
+    data: () => {
+      const d = fromSnakeCase(data);
+      // DB column is `id`; UserProfile expects `uid`
+      if (docRef.table === 'users' && d && d.uid == null && d.id != null) {
+        d.uid = d.id;
+      }
+      return d;
+    },
     id: docRef.id
   };
 };
 
 export const setDoc = async (docRef: any, data: any, options?: any) => {
-  const col = getStorageCol(docRef.path);
-  const index = col.findIndex((item: any) => item.id === docRef.id);
-  if (index >= 0) {
-    col[index] = options?.merge ? { ...col[index], ...data } : { ...data, id: docRef.id };
-  } else {
-    col.push({ ...data, id: docRef.id });
-  }
-  setStorageCol(docRef.path, col);
-
-  // Đồng bộ displayName/phoneNumber vào mockUsers khi profile được tạo/cập nhật
-  if (docRef.path === 'users' && data.uid) {
-    const users = getCachedUsers();
-    const userIdx = users.findIndex((u: any) => u.uid === data.uid);
-    if (userIdx >= 0) {
-      if (data.displayName !== undefined) users[userIdx].displayName = data.displayName;
-      if (data.sdt !== undefined) users[userIdx].phoneNumber = data.sdt;
-      localStorage.setItem('mockUsers', JSON.stringify(dehydrateData(users)));
-      invalidateUserCache();
-    }
-  }
+  const snakeData = toSnakeCase(data, docRef.table);
+  const { error } = await supabase
+    .from(docRef.table)
+    .upsert({ ...snakeData, id: docRef.id });
+  if (error) throw error;
 };
 
 export const updateDoc = async (docRef: any, data: any) => {
-  await setDoc(docRef, data, { merge: true });
+  const snakeData = toSnakeCase(data, docRef.table);
+  const { error } = await supabase
+    .from(docRef.table)
+    .update(snakeData)
+    .eq('id', docRef.id);
+  if (error) throw error;
 };
 
 export const addDoc = async (colRef: any, data: any) => {
-  const col = getStorageCol(colRef.path);
-  const id = 'doc_' + Date.now() + Math.random().toString(36).substr(2, 5);
-  col.push({ ...data, id });
-  setStorageCol(colRef.path, col);
-  return { id };
+  const snakeData = toSnakeCase(data, colRef.table);
+  const { data: inserted, error } = await supabase
+    .from(colRef.table)
+    .insert([snakeData])
+    .select()
+    .single();
+    
+  if (error) throw error;
+  return { id: inserted.id };
 };
 
 export const deleteDoc = async (docRef: any) => {
-  const col = getStorageCol(docRef.path);
-  setStorageCol(docRef.path, col.filter((item: any) => item.id !== docRef.id));
+  const { error } = await supabase
+    .from(docRef.table)
+    .delete()
+    .eq('id', docRef.id);
+  if (error) throw error;
 };
 
 export const query = (colRef: any, ...constraints: any[]) => {
-  return { ...colRef, constraints };
+  const finalConstraints = [...constraints];
+  if (colRef.chatId) {
+    finalConstraints.push(where('chatId', '==', colRef.chatId));
+  }
+  return { ...colRef, constraints: finalConstraints };
 };
 
 export const where = (field: string, op: string, value: any) => {
-  return { type: 'where', field, op, value };
+  return { type: 'where', field: toSnake(field), op, value };
 };
 
 export const orderBy = (field: string, dir: string) => {
-  return { type: 'orderBy', field, dir };
+  return { type: 'orderBy', field: toSnake(field), dir };
 };
 
-export const getDocs = (q: any) => {
-  let col = getStorageCol(q.path);
+export const getDocs = async (q: any) => {
+  let request: any = supabase.from(q.table).select('*');
   
   if (q.constraints) {
     for (const c of q.constraints) {
       if (c.type === 'where') {
-        if (c.op === '==') col = col.filter((item: any) => item[c.field] === c.value);
-        if (c.op === '>') col = col.filter((item: any) => item[c.field] > c.value);
-        if (c.op === '<') col = col.filter((item: any) => item[c.field] < c.value);
+        if (c.op === '==') request = request.eq(c.field, c.value);
+        else if (c.op === '>') request = request.gt(c.field, c.value);
+        else if (c.op === '<') request = request.lt(c.field, c.value);
       } else if (c.type === 'orderBy') {
-        col = col.sort((a: any, b: any) => {
-          if (a[c.field] < b[c.field]) return c.dir === 'asc' ? -1 : 1;
-          if (a[c.field] > b[c.field]) return c.dir === 'asc' ? 1 : -1;
-          return 0;
-        });
+        request = request.order(c.field, { ascending: c.dir === 'asc' });
       }
     }
   }
 
+  const { data, error } = await request;
+  if (error) throw error;
+  
   return {
-    docs: (() => {
-      // Deduplicate by id first — prevents duplicate key React warnings
-      const seen = new Set<string>();
-      const deduped = col.filter((item: any) => {
-        if (seen.has(item.id)) return false;
-        seen.add(item.id);
-        return true;
-      });
-      return deduped.map((item: any) => ({
-        id: item.id,
-        data: () => processData(item)
-      }));
-    })(),
-    empty: col.length === 0,
-    size: col.length
+    docs: (data || []).map(item => ({
+      id: item.id,
+      data: () => {
+        const d = fromSnakeCase(item);
+        if (q.table === 'users' && d && d.uid == null && d.id != null) {
+          d.uid = d.id;
+        }
+        return d;
+      }
+    })),
+    empty: !data || data.length === 0,
+    size: data?.length || 0
   };
 };
 
 export const onSnapshot = (q: any, callback: any) => {
-  const handler = () => {
-    const result = getDocs(q);
-    callback(result);
-  };
+  // Initial fetch
+  getDocs(q).then(callback);
   
-  // Tránh đăng ký trùng lặp cùng 1 query + callback
-  const existingIdx = listeners.findIndex(l => l._queryPath === q.path && l._callback === callback);
-  if (existingIdx >= 0) {
-    return () => {
-      const idx = listeners.indexOf(listeners[existingIdx]);
-      if (idx >= 0) listeners.splice(idx, 1);
-    };
-  }
-  
-  Object.defineProperty(handler, '_queryPath', { value: q.path, writable: false });
-  Object.defineProperty(handler, '_callback', { value: callback, writable: false });
-  
-  listeners.push(handler);
-  handler();
-  
+  // Real-time subscription
+  const channel = supabase
+    .channel(`public:${q.table}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: q.table }, () => {
+        getDocs(q).then(callback);
+    })
+    .subscribe();
+    
   return () => {
-    const idx = listeners.indexOf(handler);
-    if (idx >= 0) listeners.splice(idx, 1);
+    supabase.removeChannel(channel);
   };
 };
 
@@ -417,3 +272,5 @@ export const writeBatch = (dbIns: any) => {
     }
   };
 };
+
+export type FirebaseUser = any;

@@ -18,44 +18,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isLoading, error,
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [fieldError, setFieldError] = useState<string | null>(null);
-
-  const AUTO_GENERATED_PATTERNS = [
-    /^phone_\d+@/i,
-    /^test[_\d]*@/i,
-    /^fake[_\d]*@/i,
-    /^temp[_\d]*@/i,
-    /^dummy[_\d]*@/i,
-    /^user[_\d]+@/i,
-  ];
-
-  const validateLoginId = (value: string): string | null => {
-    const trimmed = value.trim();
-    if (!trimmed) return null;
-    // If it looks like an email, check for auto-generated patterns
-    if (trimmed.includes('@')) {
-      for (const pattern of AUTO_GENERATED_PATTERNS) {
-        if (pattern.test(trimmed)) {
-          return 'Vui lòng sử dụng email thật hoặc số điện thoại để đăng nhập.';
-        }
-      }
-    }
-    return null;
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setPhoneNumber(val);
-    setFieldError(validateLoginId(val));
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const validationError = validateLoginId(phoneNumber);
-    if (validationError) {
-      setFieldError(validationError);
-      return;
-    }
     onLogin(phoneNumber, password);
   };
 
@@ -75,31 +40,28 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isLoading, error,
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3">
         <div className="space-y-1">
-          <label className="text-[13px] font-bold text-gray-700 uppercase">Số điện thoại / Tên đăng nhập <span className="text-red-500">*</span></label>
+          <label className="text-[12px] font-bold text-gray-700 uppercase">Số điện thoại <span className="text-red-500">*</span></label>
           <input
-            type="text"
+            type="tel"
             required
-            className={`w-full h-[36px] px-3 text-[14px] text-black border rounded-sm bg-white font-semibold focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-shadow ${fieldError ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300'}`}
-            placeholder="09... hoặc email"
+            className="w-full h-[34px] px-3 text-[13px] text-black border border-gray-300 rounded-sm bg-white font-semibold focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-shadow"
+            placeholder="Nhập số điện thoại"
             value={phoneNumber}
-            onChange={handlePhoneChange}
+            onChange={e => setPhoneNumber(e.target.value)}
           />
-          {fieldError && (
-            <p className="text-[11px] text-red-500 font-semibold mt-0.5">{fieldError}</p>
-          )}
         </div>
         
         <div className="space-y-1 relative">
           <div className="flex justify-between items-center mb-1">
-            <label className="text-[13px] font-bold text-gray-700 uppercase">Mật khẩu <span className="text-red-500">*</span></label>
+            <label className="text-[12px] font-bold text-gray-700 uppercase">Mật khẩu <span className="text-red-500">*</span></label>
           </div>
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
               required
-              className="w-full h-[36px] px-3 pr-10 text-[14px] text-black border border-gray-300 rounded-sm bg-white font-semibold focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-shadow"
+              className="w-full h-[34px] px-3 pr-10 text-[13px] text-black border border-gray-300 rounded-sm bg-white font-semibold focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-shadow"
               placeholder="Nhập mật khẩu"
               value={password}
               onChange={e => setPassword(e.target.value)}
@@ -109,18 +71,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isLoading, error,
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-0 top-0 bottom-0 w-9 flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-r-sm transition-colors cursor-pointer"
             >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
           </div>
         </div>
-        
-        <div className="pt-2">
-          <button 
-            type="submit" 
-            className="w-full h-[40px] bg-gradient-to-b from-[#FF8800] to-[#E55A00] hover:from-[#FFAA00] hover:to-[#FF6600] text-white font-black text-[15px] rounded flex items-center justify-center gap-2 border border-[#C24D00] shadow-md uppercase tracking-wide cursor-pointer transition-colors active:scale-[0.98]" 
+
+        <div>
+          <button
+            type="submit"
+            className="w-full h-[38px] bg-gradient-to-b from-[#FF8800] to-[#E55A00] hover:from-[#FFAA00] hover:to-[#FF6600] text-white font-black text-[14px] rounded flex items-center justify-center gap-2 border border-[#C24D00] shadow-md uppercase tracking-wide cursor-pointer transition-colors active:scale-[0.98]"
             disabled={isLoading}
           >
-            {isLoading ? <><Loader2 size={16} className="animate-spin" /> VUI LÒNG ĐỢI...</> : 'ĐĂNG NHẬP VÀO HỆ THỐNG'}
+            {isLoading ? <><Loader2 size={15} className="animate-spin" /> VUI LÒNG ĐỢI...</> : 'ĐĂNG NHẬP VÀO HỆ THỐNG'}
           </button>
         </div>
       </form>

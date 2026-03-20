@@ -60,7 +60,7 @@ export function useDashboardData(user: UserProfile | null, adminChatUserId?: str
       }));
 
       // Audit logs
-      const qLogs = query(collection(db, 'adminAuditLog'), orderBy('timestamp', 'desc'));
+      const qLogs = query(collection(db, 'adminAuditLog'), orderBy('createdAt', 'desc'));
       unsubscribers.push(onSnapshot(qLogs, (snapshot) => {
         setAuditLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AuditLog)));
       }));
